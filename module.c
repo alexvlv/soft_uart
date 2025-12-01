@@ -72,17 +72,33 @@ static struct tty_port port;
  */
 static int __init soft_uart_init(void)
 {
-  bool success = true;
-  
+  int rc;
   printk(KERN_INFO "soft_uart: Initializing module...\n");
 
-  success &= gpio_request(gpio_tx, "soft_uart_tx") == 0;
-  success &= gpio_direction_output(gpio_tx, 1) == 0;
+	rc = gpio_request(gpio_tx, "soft_uart_tx");
+	if(rc != 0) {
+		pr_err("failed to request GPIO %d\n", gpio_tx); 
+		return -ENXIO;
+	}
+	rc = gpio_direction_output(gpio_tx, 1);
+	if(rc != 0) {
+		pr_err("gpio_direction_output failed for GPIO %d\n", gpio_tx); 
+		return -EIO;
+	}
 
-  success &= gpio_request(gpio_rx, "soft_uart_rx") == 0;
-  success &= gpio_direction_input(gpio_rx) == 0;
+	rc = gpio_request(gpio_rx, "soft_uart_rx");
+	if(rc != 0) {
+		pr_err("failed to request GPIO %d\n", gpio_rx); 
+		return -ENXIO;
+	}
+
+	rc = gpio_direction_input(gpio_rx);
+	if(rc != 0) {
+		pr_err("gpio_direction_input failed for GPIO %d\n", gpio_rx); 
+		return -EIO;
+	}
   
-  if (!success || !raspberry_soft_uart_init(gpio_to_desc(gpio_tx), gpio_to_desc(gpio_rx)))
+  if (!raspberry_soft_uart_init(gpio_to_desc(gpio_tx), gpio_to_desc(gpio_rx)))
   {
     printk(KERN_ALERT "soft_uart: Failed initialize GPIO.\n");
     return -ENOMEM;
